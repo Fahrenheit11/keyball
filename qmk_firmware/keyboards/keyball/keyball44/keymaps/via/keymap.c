@@ -81,7 +81,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 
 layer_state_t layer_state_set_user(layer_state_t state) {
     // レイヤー5 (SCROLL) が最上位の時にスクロールモードを有効化
-    keyball_set_scroll_mode(get_highest_layer(state) == 5);
+    // keyball_set_scroll_mode(get_highest_layer(state) == 5);
     return state;
 }
 
@@ -135,6 +135,21 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     // トラックボールの移動またはクリックを検知
+    // レイヤー5（スクロールレイヤー）が最上位の場合の処理
+    if (layer_state_cmp(layer_state, 5)) {
+        // トラックボールの移動量を高解像度スクロール量に変換する
+        // ※OSのスクロール方向設定に合わせて符号（-）を反転させること
+        // ※感度を変えたい場合は mouse_report.y * 2 のように定数を掛けること
+        mouse_report.h_v = -mouse_report.y; // 縦スクロール
+        mouse_report.h_h = mouse_report.x;  // 横スクロール
+
+        // カーソル自体の移動を無効化
+        mouse_report.x = 0;
+        mouse_report.y = 0;
+        
+        // このレイヤーでは自動マウスレイヤーの遷移処理をスキップ
+        return mouse_report;
+    }
     if (mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.buttons != 0) {
         // レイヤー5が最上位（スクロールモード中）の場合は遷移させない
         if (layer_state_cmp(layer_state, 5)) {
@@ -176,5 +191,5 @@ void process_combo_event(uint16_t combo_index, bool pressed) {
 }
 // キーボード起動時に1回だけ実行される関数
 void keyboard_post_init_user(void) {
-    pointing_device_set_cpi(10); // 1000の部分を希望のDPIに変更する
+    pointing_device_set_cpi(3); // 1000の部分を希望のDPIに変更する
 }

@@ -44,3 +44,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // config.h の末尾などに追加
 #define AUTO_MOUSE_DEFAULT_CPI 250  // 通常時のDPI（デフォルトは1000、好みに応じて400〜3000程度で調整）
 #define SCROLL_MODE_DEFAULT_CPI 250  // スクロールモード時のDPI（少し低めにすると操作しやすくなります）
+#define POINTING_DEVICE_HIRES_SCROLL_ENABLE
