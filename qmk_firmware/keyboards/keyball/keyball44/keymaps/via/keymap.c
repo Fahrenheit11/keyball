@@ -85,3 +85,33 @@ void oledkit_render_info_user(void) {
     keyball_oled_render_layerinfo();
 }
 #endif
+
+// keymap.c の末尾に追加
+
+uint16_t auto_mouse_timer = 0;
+bool auto_mouse_active = false;
+
+void pointing_device_task_user(void) {
+    // トラックボールの現在の状態を取得
+    report_mouse_t mouse = pointing_device_get_report();
+    
+    // トラックボールの移動またはクリックを検知
+    if (mouse.x != 0 || mouse.y != 0 || mouse.buttons != 0) {
+        // レイヤー5が最上位（スクロールモード中）の場合はマウスレイヤーに遷移させない
+        if (layer_state_cmp(layer_state, 5)) {
+            return;
+        }
+
+        if (!auto_mouse_active) {
+            layer_on(1); // レイヤー1 (MOUSE) を有効化
+            auto_mouse_active = true;
+        }
+        auto_mouse_timer = timer_read(); // タイムアウト用のタイマーをリセット
+    }
+
+    // 操作が途切れてから一定時間（ここでは 400ms）経過したらレイヤー1を解除
+    if (auto_mouse_active && timer_elapsed(auto_mouse_timer) > 400) {
+        layer_off(1);
+        auto_mouse_active = false;
+    }
+}
