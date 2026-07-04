@@ -86,20 +86,16 @@ void oledkit_render_info_user(void) {
 }
 #endif
 
-// keymap.c の末尾に追加
 
 uint16_t auto_mouse_timer = 0;
 bool auto_mouse_active = false;
 
-void pointing_device_task_user(void) {
-    // トラックボールの現在の状態を取得
-    report_mouse_t mouse = pointing_device_get_report();
-    
+report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     // トラックボールの移動またはクリックを検知
-    if (mouse.x != 0 || mouse.y != 0 || mouse.buttons != 0) {
+    if (mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.buttons != 0) {
         // レイヤー5が最上位（スクロールモード中）の場合はマウスレイヤーに遷移させない
         if (layer_state_cmp(layer_state, 5)) {
-            return;
+            return mouse_report;
         }
 
         if (!auto_mouse_active) {
@@ -114,4 +110,6 @@ void pointing_device_task_user(void) {
         layer_off(1);
         auto_mouse_active = false;
     }
+
+    return mouse_report;
 }
