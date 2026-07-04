@@ -140,8 +140,14 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         // トラックボールの移動量を高解像度スクロール量に変換する
         // ※OSのスクロール方向設定に合わせて符号（-）を反転させること
         // ※感度を変えたい場合は mouse_report.y * 2 のように定数を掛けること
-        mouse_report.v = -mouse_report.y; // 縦スクロール
-        mouse_report.h = mouse_report.x;  // 横スクロール
+        static float scroll_accum_v = 0.0;
+
+        scroll_accum_v += -mouse_report.y * 0.3;
+
+        mouse_report.v = (int8_t)scroll_accum_v; // 縦スクロール
+        mouse_report.h = 0;  // 横スクロール
+        
+        scroll_accum_v -= mouse_report.v; // 剩余量を取り除く
 
         // カーソル自体の移動を無効化
         mouse_report.x = 0;
@@ -191,5 +197,5 @@ void process_combo_event(uint16_t combo_index, bool pressed) {
 }
 // キーボード起動時に1回だけ実行される関数
 void keyboard_post_init_user(void) {
-    pointing_device_set_cpi(3); // 1000の部分を希望のDPIに変更する
+    pointing_device_set_cpi(7); // 1000の部分を希望のDPIに変更する
 }
