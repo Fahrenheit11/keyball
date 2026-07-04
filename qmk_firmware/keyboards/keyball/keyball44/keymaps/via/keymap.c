@@ -5,17 +5,26 @@
 enum combo_events {
   COMBO_LCLK,
   COMBO_RCLK,
-  COMBO_FSCROLL
+  COMBO_FSCROLL,
+  COMBO_LCLK_L1, // レイヤー1での左クリックコンボ
+  COMBO_RCLK_L1  // レイヤー1での右クリックコンボ
 };
 
+// レイヤー0用（通常の文字入力状態）
 const uint16_t PROGMEM combo_lclk[] = {KC_J, KC_K, COMBO_END};
 const uint16_t PROGMEM combo_rclk[] = {KC_K, KC_L, COMBO_END};
 const uint16_t PROGMEM combo_fscroll[] = {LT(5, KC_D), LT(1, KC_F), COMBO_END};
+
+// レイヤー1用（J=BTN1, K=BTN3, L=BTN2 として認識されるため、そのキーコードで同時押しを判定する）
+const uint16_t PROGMEM combo_lclk_l1[] = {KC_BTN1, KC_BTN3, COMBO_END};
+const uint16_t PROGMEM combo_rclk_l1[] = {KC_BTN3, KC_BTN2, COMBO_END};
 
 combo_t key_combos[] = {
   [COMBO_LCLK] = COMBO(combo_lclk, KC_BTN1),
   [COMBO_RCLK] = COMBO(combo_rclk, KC_BTN2),
   [COMBO_FSCROLL] = COMBO(combo_fscroll, MO(5)),
+  [COMBO_LCLK_L1] = COMBO(combo_lclk_l1, KC_BTN1),
+  [COMBO_RCLK_L1] = COMBO(combo_rclk_l1, KC_BTN2),
 };
 
 // clang-format off
@@ -87,13 +96,47 @@ void oledkit_render_info_user(void) {
 #endif
 
 
+// keymap.c の末尾を以下に置き換え
+
 uint16_t auto_mouse_timer = 0;
 bool auto_mouse_active = false;
+
+// マウスレイヤー（レイヤー1）滞在中に、自動解除を「無効化」したいキーの条件を指定
+bool is_mouse_key(uint16_t keycode) {
+    switch (keycode) {
+        // マウスボタンおよびレイヤー1に配置されたコピペショートカットは解除の対象外
+        case KC_BTN1:
+        case KC_BTN2:
+        case KC_BTN3:
+        case KC_MS_U:
+        case KC_MS_D:
+        case KC_MS_L:
+        case KC_MS_R:
+        case LCTL(KC_C): // コピー
+        case LCTL(KC_X): // 切り取り
+        case LCTL(KC_V): // ペースト
+            return true;
+        default:
+            return false;
+    }
+}
+
+// キーが押された瞬間に割り込んで判定
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    if (record->event.pressed) {
+        // 自動マウスレイヤーが有効、かつ押されたキーがマウス関連キー「以外」の場合
+        if (auto_mouse_active && !is_mouse_key(keycode)) {
+            layer_off(1); // 即座にレイヤー1を解除
+            auto_mouse_active = false;
+        }
+    }
+    return true;
+}
 
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     // トラックボールの移動またはクリックを検知
     if (mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.buttons != 0) {
-        // レイヤー5が最上位（スクロールモード中）の場合はマウスレイヤーに遷移させない
+        // レイヤー5が最上位（スクロールモード中）の場合は遷移させない
         if (layer_state_cmp(layer_state, 5)) {
             return mouse_report;
         }
@@ -102,14 +145,32 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
             layer_on(1); // レイヤー1 (MOUSE) を有効化
             auto_mouse_active = true;
         }
-        auto_mouse_timer = timer_read(); // タイムアウト用のタイマーをリセット
+        auto_mouse_timer = timer_read(); // タイマーリセット
     }
 
-    // 操作が途切れてから一定時間（ここでは 400ms）経過したらレイヤー1を解除
+    // トラックボール操作が途切れてから 400ms 経過したら解除
     if (auto_mouse_active && timer_elapsed(auto_mouse_timer) > 400) {
         layer_off(1);
         auto_mouse_active = false;
     }
 
     return mouse_report;
+}
+
+// コンボが発動・解除された瞬間に割り込むQMK標準関数
+void process_combo_event(uint16_t combo_index, bool pressed) {
+    if (pressed) {
+        switch(combo_index) {
+            case COMBO_LCLK:
+            case COMBO_RCLK:
+            case COMBO_LCLK_L1:
+            case COMBO_RCLK_L1:
+                // 指定のコンボ成立時、自動マウスレイヤー中であれば即時解除
+                if (auto_mouse_active) {
+                    layer_off(1);
+                    auto_mouse_active = false;
+                }
+                break;
+        }
+    }
 }
