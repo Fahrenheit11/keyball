@@ -140,8 +140,8 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         // トラックボールの移動量を高解像度スクロール量に変換する
         // ※OSのスクロール方向設定に合わせて符号（-）を反転させること
         // ※感度を変えたい場合は mouse_report.y * 2 のように定数を掛けること
-        mouse_report.h_v = -mouse_report.y; // 縦スクロール
-        mouse_report.h_h = mouse_report.x;  // 横スクロール
+        mouse_report.v = -mouse_report.y; // 縦スクロール
+        mouse_report.h = mouse_report.x;  // 横スクロール
 
         // カーソル自体の移動を無効化
         mouse_report.x = 0;
