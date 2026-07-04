@@ -142,7 +142,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         // ※感度を変えたい場合は mouse_report.y * 2 のように定数を掛けること
         static float scroll_accum_v = 0.0;
 
-        scroll_accum_v += -mouse_report.y * 0.3;
+        scroll_accum_v += -mouse_report.y * 0.15;
 
         mouse_report.v = (int8_t)scroll_accum_v; // 縦スクロール
         mouse_report.h = 0;  // 横スクロール
@@ -197,5 +197,5 @@ void process_combo_event(uint16_t combo_index, bool pressed) {
 }
 // キーボード起動時に1回だけ実行される関数
 void keyboard_post_init_user(void) {
-    pointing_device_set_cpi(7); // 1000の部分を希望のDPIに変更する
+    pointing_device_set_cpi(5); // 1000の部分を希望のDPIに変更する
 }
