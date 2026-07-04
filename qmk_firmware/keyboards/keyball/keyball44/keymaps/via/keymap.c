@@ -142,7 +142,7 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
         // ※感度を変えたい場合は mouse_report.y * 2 のように定数を掛けること
         static float scroll_accum_v = 0.0;
 
-        scroll_accum_v += -mouse_report.y * 0.15;
+        scroll_accum_v += -mouse_report.y * 0.1;
 
         mouse_report.v = (int8_t)scroll_accum_v; // 縦スクロール
         mouse_report.h = 0;  // 横スクロール
