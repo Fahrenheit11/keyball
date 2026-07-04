@@ -176,5 +176,5 @@ void process_combo_event(uint16_t combo_index, bool pressed) {
 }
 // キーボード起動時に1回だけ実行される関数
 void keyboard_post_init_user(void) {
-    pointing_device_set_cpi(100); // 1000の部分を希望のDPIに変更する
+    pointing_device_set_cpi(10); // 1000の部分を希望のDPIに変更する
 }
