@@ -40,3 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define COMBO_COUNT 3
 #define DYNAMIC_KEYMAP_LAYER_COUNT 6
+
+// config.h の末尾などに追加
+#define AUTO_MOUSE_DEFAULT_CPI 500  // 通常時のDPI（デフォルトは1000、好みに応じて400〜3000程度で調整）
+#define SCROLL_MODE_DEFAULT_CPI 500  // スクロールモード時のDPI（少し低めにすると操作しやすくなります）
