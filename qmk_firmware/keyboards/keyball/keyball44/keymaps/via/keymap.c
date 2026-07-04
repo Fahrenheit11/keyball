@@ -34,7 +34,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     KC_TAB,         KC_Q,        KC_W,    KC_E,          KC_R,          KC_T,       KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,          KC_BSPC,
     LCTL_T(KC_ESC), KC_A,        KC_S,    LT(5, KC_D),   LT(1, KC_F),   KC_G,   sddfgasdxcv    KC_H,    KC_J,    KC_K,    KC_L,    LT(5, KC_SCLN),KC_ENT,
     KC_LSFT,        KC_Z,        KC_X,    KC_C,          KC_V,          KC_B,       KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH,       KC_ASTR,
-    KC_LGUI,     KC_LALT, LT(3, KC_LNG2),LT(4, KC_EQL), KC_NO,  LT(2, KC_MINS), LT(4, KC_SPC), LT(3, KC_LNG1), LT(5, KC_GRV)
+    KC_LGUI,     KC_LALT, LT(3, KC_LNG2),LT(4, KC_EQL),   LT(2, KC_MINS), LT(4, KC_SPC), LT(3, KC_LNG1),KC_NO,KC_NO, LT(5, KC_GRV)
   ),
 
   // [1] MOUSE
