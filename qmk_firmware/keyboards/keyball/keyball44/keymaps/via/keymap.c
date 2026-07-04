@@ -10,7 +10,7 @@ enum combo_events {
 
 const uint16_t PROGMEM combo_lclk[] = {KC_J, KC_K, COMBO_END};
 const uint16_t PROGMEM combo_rclk[] = {KC_K, KC_L, COMBO_END};
-const uint16_t PROGMEM combo_fscroll[] = {LT(6, KC_D), LT(1, KC_F), COMBO_END};
+const uint16_t PROGMEM combo_fscroll[] = {LT(5, KC_D), LT(1, KC_F), COMBO_END};
 
 combo_t key_combos[] = {
   [COMBO_LCLK] = COMBO(combo_lclk, KC_BTN1),
@@ -22,8 +22,8 @@ combo_t key_combos[] = {
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // [0] default
   [0] = LAYOUT_universal(
-    KC_TAB,         LT(7, KC_Q), KC_W,    KC_E,          KC_R,          KC_T,       KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,          KC_BSPC,
-    LCTL_T(KC_ESC), KC_A,        KC_S,    LT(6, KC_D),   LT(1, KC_F),   KC_G,       KC_H,    KC_J,    KC_K,    KC_L,    LT(6, KC_SCLN),KC_ENT,
+    KC_TAB,         KC_Q,        KC_W,    KC_E,          KC_R,          KC_T,       KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,          KC_BSPC,
+    LCTL_T(KC_ESC), KC_A,        KC_S,    LT(5, KC_D),   LT(1, KC_F),   KC_G,       KC_H,    KC_J,    KC_K,    KC_L,    LT(5, KC_SCLN),KC_ENT,
     KC_LSFT,        KC_Z,        KC_X,    KC_C,          KC_V,          KC_B,       KC_ASTR, KC_N,    KC_M,    KC_COMM, KC_DOT,        KC_SLSH,
                     KC_LGUI,     KC_LALT, LT(3, KC_LNG2),LT(4, KC_EQL), KC_NO,      KC_NO,   LT(2, KC_MINS), LT(4, KC_SPC), LT(3, KC_LNG1), LT(5, KC_GRV)
   ),
@@ -31,7 +31,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   // [1] MOUSE
   [1] = LAYOUT_universal(
     _______, _______, _______, _______, _______, _______, LCTL(KC_V), LCTL(KC_V), _______, _______, _______, _______,
-    _______, _______, _______, _______, MO(8),   _______, LCTL(KC_C), KC_BTN1,    KC_BTN3, KC_BTN2, _______, _______,
+    _______, _______, _______, _______, _______, _______, LCTL(KC_C), KC_BTN1,    KC_BTN3, KC_BTN2, _______, _______,
     _______, _______, _______, _______, _______, _______, LCTL(KC_X), _______,    _______, _______, _______, _______,
              _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
   ),
@@ -60,32 +60,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
              _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
   ),
 
-  // [5] scrool_sub
+  // [5] SCROLL (ZMKのscrool_subとSCROLLを統合)
   [5] = LAYOUT_universal(
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-             _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-  ),
-
-  // [6] SCROLL
-  [6] = LAYOUT_universal(
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-             _______, _______, _______, _______, _______, _______, _______, _______, _______, _______
-  ),
-
-  // [7] Bluetooth (無効化レイヤー)
-  [7] = LAYOUT_universal(
-    _______, _______, _______, _______, _______, _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   _______,
-    _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
-    _______, KC_1,    KC_2,    KC_3,    _______, _______, QK_BOOT, _______, _______, _______, _______, KC_NO,
-             _______, _______, _______, _______, _______, _______, _______, _______, _______, KC_NO
-  ),
-
-  // [8] LOW_DPI
-  [8] = LAYOUT_universal(
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
     _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______, _______,
@@ -95,9 +71,8 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // clang-format on
 
 layer_state_t layer_state_set_user(layer_state_t state) {
-    // レイヤー5 (scrool_sub) または 6 (SCROLL) が有効な場合にスクロールモードを有効化
-    bool is_scroll_layer = (get_highest_layer(state) == 5) || (get_highest_layer(state) == 6);
-    keyball_set_scroll_mode(is_scroll_layer);
+    // レイヤー5 (SCROLL) が最上位の時にスクロールモードを有効化
+    keyball_set_scroll_mode(get_highest_layer(state) == 5);
     return state;
 }
 
