@@ -147,25 +147,35 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
 // トラックボールの処理
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    // スクロールモード（レイヤー5）の処理
+    // 1. スクロールモード（レイヤー5）が最上位の場合の処理
     if (layer_state_cmp(layer_state, 5)) {
-        mouse_report.v = -mouse_report.y;
-        mouse_report.h = mouse_report.x;
+        static float scroll_accum_v = 0.0;
+        
+        // 移動量を独自の倍率（0.1）で蓄積
+        scroll_accum_v += -mouse_report.y * 0.1;
+        
+        mouse_report.v = (int8_t)scroll_accum_v; // 整数部分を代入
+        mouse_report.h = 0;                     // 横スクロールは無効化
+        
+        scroll_accum_v -= mouse_report.v;        // 送信済みの整数分を差し引く
+        
+        // カーソル移動を無効化
         mouse_report.x = 0;
         mouse_report.y = 0;
+        
+        // オートマウス処理をスキップして終了
         return mouse_report;
     }
 
-    // トラックボールの入力検知
+    // 2. 通常時のオートマウスレイヤー（レイヤー1）制御処理
     if (mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.buttons != 0) {
         
-        // クリックされた場合は即座に閾値を満たす
+        // クリックを検知した場合は即座に遷移閾値を満たす
         if (mouse_report.buttons != 0) {
             movement_accumulator = MOUSE_ACTIVATION_THRESHOLD;
         } else {
-            // 移動量を絶対値で蓄積
+            // 移動量の絶対値を蓄積
             movement_accumulator += abs(mouse_report.x) + abs(mouse_report.y);
-            // オーバーフロー防止
             if (movement_accumulator > MOUSE_ACTIVATION_THRESHOLD) {
                 movement_accumulator = MOUSE_ACTIVATION_THRESHOLD;
             }
@@ -176,18 +186,18 @@ report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
             timer_elapsed(last_typing_time) > TYPING_GUARD_TIME &&
             movement_accumulator >= MOUSE_ACTIVATION_THRESHOLD) {
             
-            layer_on(1);
+            layer_on(1); // レイヤー1 (MOUSE) を有効化
             auto_mouse_active = true;
         }
 
         auto_mouse_timer = timer_read(); // タイマーリセット
     }
 
-    // 操作が途切れてからのタイムアウト解除
+    // トラックボール操作が途切れてから 400ms 経過したら解除
     if (auto_mouse_active && timer_elapsed(auto_mouse_timer) > 400) {
         layer_off(1);
         auto_mouse_active = false;
-        movement_accumulator = 0; // 解除時に移動量蓄積をリセット
+        movement_accumulator = 0; // 解除時に蓄積値をリセット
     }
 
     return mouse_report;
