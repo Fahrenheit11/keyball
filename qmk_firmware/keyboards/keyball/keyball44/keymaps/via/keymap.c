@@ -98,13 +98,20 @@ void oledkit_render_info_user(void) {
 
 // keymap.c の末尾を以下に置き換え
 
+// --- 状態管理変数の定義 ---
 uint16_t auto_mouse_timer = 0;
 bool auto_mouse_active = false;
 
-// マウスレイヤー（レイヤー1）滞在中に、自動解除を「無効化」したいキーの条件を指定
+// 追加：タイピングガードと移動量閾値のための変数
+uint16_t last_typing_time = 0;
+uint8_t movement_accumulator = 0;
+
+#define MOUSE_ACTIVATION_THRESHOLD 10 // レイヤー遷移に必要な移動量の蓄積値
+#define TYPING_GUARD_TIME 300         // 打鍵後、誤作動を防止する時間(ms)
+
+// マウスレイヤー滞在中の維持キー条件
 bool is_mouse_key(uint16_t keycode) {
     switch (keycode) {
-        // マウスボタンおよびレイヤー1に配置されたコピペショートカットは解除の対象外
         case KC_BTN1:
         case KC_BTN2:
         case KC_BTN3:
@@ -112,67 +119,75 @@ bool is_mouse_key(uint16_t keycode) {
         case KC_MS_D:
         case KC_MS_L:
         case KC_MS_R:
-        case LCTL(KC_C): // コピー
-        case LCTL(KC_X): // 切り取り
-        case LCTL(KC_V): // ペースト
+        case LCTL(KC_C):
+        case LCTL(KC_X):
+        case LCTL(KC_V):
             return true;
         default:
             return false;
     }
 }
 
-// キーが押された瞬間に割り込んで判定
+// キー打鍵時の割り込み処理
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if (record->event.pressed) {
-        // 自動マウスレイヤーが有効、かつ押されたキーがマウス関連キー「以外」の場合
-        if (auto_mouse_active && !is_mouse_key(keycode)) {
-            layer_off(1); // 即座にレイヤー1を解除
-            auto_mouse_active = false;
+        // マウス関連キー以外が押された場合
+        if (!is_mouse_key(keycode)) {
+            last_typing_time = timer_read(); // タイピング時間を記録（ガード用）
+
+            if (auto_mouse_active) {
+                layer_off(1); // 即座にレイヤー1を解除
+                auto_mouse_active = false;
+                movement_accumulator = 0; // 移動量蓄積をリセット
+            }
         }
     }
     return true;
 }
 
+// トラックボールの処理
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
-    // トラックボールの移動またはクリックを検知
-    // レイヤー5（スクロールレイヤー）が最上位の場合の処理
+    // スクロールモード（レイヤー5）の処理
     if (layer_state_cmp(layer_state, 5)) {
-        // トラックボールの移動量を高解像度スクロール量に変換する
-        // ※OSのスクロール方向設定に合わせて符号（-）を反転させること
-        // ※感度を変えたい場合は mouse_report.y * 2 のように定数を掛けること
-        static float scroll_accum_v = 0.0;
-
-        scroll_accum_v += -mouse_report.y * 0.1;
-
-        mouse_report.v = (int8_t)scroll_accum_v; // 縦スクロール
-        mouse_report.h = 0;  // 横スクロール
-        
-        scroll_accum_v -= mouse_report.v; // 剩余量を取り除く
-
-        // カーソル自体の移動を無効化
+        mouse_report.v = -mouse_report.y;
+        mouse_report.h = mouse_report.x;
         mouse_report.x = 0;
         mouse_report.y = 0;
-        
-        // このレイヤーでは自動マウスレイヤーの遷移処理をスキップ
         return mouse_report;
     }
+
+    // トラックボールの入力検知
     if (mouse_report.x != 0 || mouse_report.y != 0 || mouse_report.buttons != 0) {
-        // レイヤー5が最上位（スクロールモード中）の場合は遷移させない
-        if (layer_state_cmp(layer_state, 5)) {
-            return mouse_report;
+        
+        // クリックされた場合は即座に閾値を満たす
+        if (mouse_report.buttons != 0) {
+            movement_accumulator = MOUSE_ACTIVATION_THRESHOLD;
+        } else {
+            // 移動量を絶対値で蓄積
+            movement_accumulator += abs(mouse_report.x) + abs(mouse_report.y);
+            // オーバーフロー防止
+            if (movement_accumulator > MOUSE_ACTIVATION_THRESHOLD) {
+                movement_accumulator = MOUSE_ACTIVATION_THRESHOLD;
+            }
         }
 
-        if (!auto_mouse_active) {
-            layer_on(1); // レイヤー1 (MOUSE) を有効化
+        // 条件：未発動 ＆ タイピングガード期間外 ＆ 移動量が閾値に到達
+        if (!auto_mouse_active &&
+            timer_elapsed(last_typing_time) > TYPING_GUARD_TIME &&
+            movement_accumulator >= MOUSE_ACTIVATION_THRESHOLD) {
+            
+            layer_on(1);
             auto_mouse_active = true;
         }
+
         auto_mouse_timer = timer_read(); // タイマーリセット
     }
 
-    // トラックボール操作が途切れてから 400ms 経過したら解除
+    // 操作が途切れてからのタイムアウト解除
     if (auto_mouse_active && timer_elapsed(auto_mouse_timer) > 400) {
         layer_off(1);
         auto_mouse_active = false;
+        movement_accumulator = 0; // 解除時に移動量蓄積をリセット
     }
 
     return mouse_report;
