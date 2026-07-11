@@ -149,15 +149,18 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 report_mouse_t pointing_device_task_user(report_mouse_t mouse_report) {
     // 1. スクロールモード（レイヤー5）が最上位の場合の処理
     if (layer_state_cmp(layer_state, 5)) {
-        static float scroll_accum_v = 0.0;
+        // float ではなく 16ビットの符号付き整数（int16_t）を使用する
+        static int16_t scroll_accum_v = 0;
         
-        // 移動量を独自の倍率（0.1）で蓄積
-        scroll_accum_v += -mouse_report.y * 0.1;
+        // 移動量をそのまま整数として蓄積
+        scroll_accum_v += -mouse_report.y;
         
-        mouse_report.v = (int8_t)scroll_accum_v; // 整数部分を代入
-        mouse_report.h = 0;                     // 横スクロールは無効化
+        // 10で割った商をスクロール量として送信（実質 0.1 倍と同じ）
+        mouse_report.v = (int8_t)(scroll_accum_v / 10);
+        mouse_report.h = 0;
         
-        scroll_accum_v -= mouse_report.v;        // 送信済みの整数分を差し引く
+        // 送信した分を除外し、余り（端数）だけを次回に持ち越す
+        scroll_accum_v = scroll_accum_v % 10;
         
         // カーソル移動を無効化
         mouse_report.x = 0;
